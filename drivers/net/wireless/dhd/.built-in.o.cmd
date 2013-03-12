@@ -1,0 +1,1 @@
+cmd_drivers/net/wireless/dhd/built-in.o :=  rm -f drivers/net/wireless/dhd/built-in.o; /home/danil_e71/android-ndk/toolchains/arm-eabi-4.4.0/prebuilt/linux-x86/bin/arm-eabi-ar rcs drivers/net/wireless/dhd/built-in.o

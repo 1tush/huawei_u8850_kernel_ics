@@ -1,0 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <danil_e71_log.h>
+
+
+void LOGF(char *log,char *snd_log)
+{
+FILE *f=fopen("/system/log.txt","rw");
+struct file *fp;
+fp = filp_open("/system/log.txt", O_RDONLY, 0);
+}
