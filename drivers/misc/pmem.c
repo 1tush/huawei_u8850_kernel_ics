@@ -47,8 +47,12 @@
 #define PMEM_32BIT_WORD_ORDER (5)
 #define PMEM_BITS_PER_WORD_MASK (BITS_PER_LONG - 1)
 
-
+#ifdef CONFIG_ANDROID_PMEM_DEBUG
 #define PMEM_DEBUG 1
+#else
+#define PMEM_DEBUG 1
+#endif
+
 #define SYSTEM_ALLOC_RETRY 10
 
 /* indicates that a refernce to this file has been taken via get_pmem_file,
@@ -1577,7 +1581,8 @@ static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 	down_write(&data->sem);
 	/* check this file isn't already mmaped, for submaps check this file
 	 * has never been mmaped */
-	if ((data->flags & PMEM_FLAGS_SUBMAP) ||
+	if (/*(data->flags & PMEM_FLAGS_MASTERMAP) || */
+	    (data->flags & PMEM_FLAGS_SUBMAP) ||
 	    (data->flags & PMEM_FLAGS_UNSUBMAP)) {
 #if PMEM_DEBUG
 		pr_err("pmem: you can only mmap a pmem file once, "
@@ -3156,5 +3161,4 @@ static void __exit pmem_exit(void)
 
 module_init(pmem_init);
 module_exit(pmem_exit);
-
 
