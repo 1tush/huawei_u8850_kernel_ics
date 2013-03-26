@@ -166,9 +166,9 @@ enum {
 /* 2 VG pipes can be shared by RGB and VIDEO */
 #define MDP4_MAX_PIPE (OVERLAY_PIPE_MAX + 2)
 
-enum {	
-  	OVERLAY_TYPE_RGB,	
-  	OVERLAY_TYPE_VIDEO	
+enum {
+	OVERLAY_TYPE_RGB,
+	OVERLAY_TYPE_VIDEO
 };
 
 enum {
@@ -433,7 +433,7 @@ int mdp4_overlay_play_wait(struct fb_info *info,
 	struct msmfb_overlay_data *req);
 int mdp4_overlay_play(struct fb_info *info, struct msmfb_overlay_data *req,
 				struct file **pp_src_file);
-struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(int ptype, int mixer);;
+struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(int ptype, int mixer);
 void mdp4_overlay_pipe_free(struct mdp4_overlay_pipe *pipe);
 void mdp4_overlay_dmap_cfg(struct msm_fb_data_type *mfd, int lcdc);
 void mdp4_overlay_dmap_xy(struct mdp4_overlay_pipe *pipe);

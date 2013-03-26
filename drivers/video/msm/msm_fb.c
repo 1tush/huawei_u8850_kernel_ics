@@ -338,7 +338,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 	rc = msm_fb_register(mfd);
 	if (rc)
 		return rc;
-    err = pm_runtime_set_active(mfd->fbi->dev);
+	err = pm_runtime_set_active(mfd->fbi->dev);
 	if (err < 0)
 		printk(KERN_ERR "pm_runtime: fail to set active.\n");
 	pm_runtime_enable(mfd->fbi->dev);
@@ -353,7 +353,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 			lcd_backlight_registered = 1;
 	}
 #endif
-	
+
 	pdev_list[pdev_list_cnt++] = pdev;
 	msm_fb_create_sysfs(pdev);
 	return 0;
@@ -394,11 +394,11 @@ static int msm_fb_remove(struct platform_device *pdev)
 
 	if (mfd->dma_hrtimer.function)
 		hrtimer_cancel(&mfd->dma_hrtimer);
-		
+
 	if (mfd->msmfb_no_update_notify_timer.function)
 		del_timer(&mfd->msmfb_no_update_notify_timer);
 	complete(&mfd->msmfb_no_update_notify);
-	complete(&mfd->msmfb_update_notify);	
+	complete(&mfd->msmfb_update_notify);
 
 	/* remove /dev/fb* */
 	unregister_framebuffer(mfd->fbi);
@@ -458,6 +458,10 @@ static int msm_fb_suspend_sub(struct msm_fb_data_type *mfd)
 
 	if ((!mfd) || (mfd->key != MFD_KEY))
 		return 0;
+
+	if (mfd->msmfb_no_update_notify_timer.function)
+		del_timer(&mfd->msmfb_no_update_notify_timer);
+	complete(&mfd->msmfb_no_update_notify);
 
 	/*
 	 * suspend this channel
@@ -1023,6 +1027,8 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 		return ret;
 	}
 
+	fix->type = panel_info->is_3d_panel;
+
 	fix->line_length = msm_fb_line_length(mfd->index, panel_info->xres,
 					      bpp);
 	/* calculate smem_len based on max size of two supplied modes */
@@ -1096,7 +1102,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	init_completion(&mfd->pan_comp);
 	init_completion(&mfd->refresher_comp);
 	init_MUTEX(&mfd->sem);
-	
+
 	init_timer(&mfd->msmfb_no_update_notify_timer);
 	mfd->msmfb_no_update_notify_timer.function =
 			msmfb_no_update_notify_timer_cb;
@@ -1414,7 +1420,7 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 
 		dirtyPtr = &dirty;
 	}
-    complete(&mfd->msmfb_update_notify);
+	complete(&mfd->msmfb_update_notify);
 	mutex_lock(&msm_fb_notify_update_sem);
 	if (mfd->msmfb_no_update_notify_timer.function)
 		del_timer(&mfd->msmfb_no_update_notify_timer);
@@ -1423,7 +1429,7 @@ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
 				jiffies + ((1000 * HZ) / 1000);
 	add_timer(&mfd->msmfb_no_update_notify_timer);
 	mutex_unlock(&msm_fb_notify_update_sem);
-    
+
 	down(&msm_fb_pan_sem);
 	mdp_set_dma_pan_info(info, dirtyPtr,
 			     (var->activate == FB_ACTIVATE_VBL));
@@ -2472,24 +2478,24 @@ static int msmfb_overlay_unset(struct fb_info *info, unsigned long *argp)
 	return mdp4_overlay_unset(info, ndx);
 }
 
-static int msmfb_overlay_play_wait(struct fb_info *info, unsigned long *argp)	
-{	
-	int ret;	
-  	struct msmfb_overlay_data req;
-  	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+static int msmfb_overlay_play_wait(struct fb_info *info, unsigned long *argp)
+{
+	int ret;
+	struct msmfb_overlay_data req;
+	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 
-  	if (mfd->overlay_play_enable == 0)      /* nothing to do */
-    	return 0;
- 
-  	ret = copy_from_user(&req, argp, sizeof(req));
-  	if (ret) { 		
-    	pr_err("%s:msmfb_overlay_wait ioctl failed", __func__);
-    	return ret;
-  	}
-	
-  	ret = mdp4_overlay_play_wait(info, &req);
-	
-  	return ret;
+	if (mfd->overlay_play_enable == 0)      /* nothing to do */
+		return 0;
+
+	ret = copy_from_user(&req, argp, sizeof(req));
+	if (ret) {
+		pr_err("%s:msmfb_overlay_wait ioctl failed", __func__);
+		return ret;
+	}
+
+	ret = mdp4_overlay_play_wait(info, &req);
+
+	return ret;
 }
 
 static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
@@ -2508,8 +2514,8 @@ static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
 			__func__);
 		return ret;
 	}
-    
-    complete(&mfd->msmfb_update_notify);
+
+	complete(&mfd->msmfb_update_notify);
 	mutex_lock(&msm_fb_notify_update_sem);
 	if (mfd->msmfb_no_update_notify_timer.function)
 		del_timer(&mfd->msmfb_no_update_notify_timer);
@@ -2518,7 +2524,7 @@ static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
 				jiffies + ((1000 * HZ) / 1000);
 	add_timer(&mfd->msmfb_no_update_notify_timer);
 	mutex_unlock(&msm_fb_notify_update_sem);
-    
+
 	ret = mdp4_overlay_play(info, &req, &p_src_file);
 
 #ifdef CONFIG_ANDROID_PMEM
@@ -2551,16 +2557,16 @@ static int msmfb_overlay_play_enable(struct fb_info *info, unsigned long *argp)
 static int msmfb_overlay_blt(struct fb_info *info, unsigned long *argp)
 {
 	int     ret;
-	struct msmfb_overlay_blt req;	
+	struct msmfb_overlay_blt req;
 
 	ret = copy_from_user(&req, argp, sizeof(req));
 	if (ret) {
 		pr_err("%s: failed\n", __func__);
 		return ret;
 	}
-	
+
 	ret = mdp4_overlay_blt(info, &req);
-	
+
 	return ret;
 }
 
@@ -2717,7 +2723,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 #ifndef CONFIG_FB_MSM_MDP40
 	struct mdp_ccs ccs_matrix;
 #endif
-    struct mdp_csc csc_matrix;
+	struct mdp_csc csc_matrix;
 	struct mdp_page_protection fb_page_protection;
 	int ret = 0;
 
@@ -2749,10 +2755,10 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		up(&msm_fb_ioctl_ppp_sem);
 		break;
 	case MSMFB_OVERLAY_PLAY_WAIT:
-    	down(&msm_fb_ioctl_ppp_sem);	
-    	ret = msmfb_overlay_play_wait(info, argp);
-    	up(&msm_fb_ioctl_ppp_sem);
-    	break;	
+		down(&msm_fb_ioctl_ppp_sem);
+		ret = msmfb_overlay_play_wait(info, argp);
+		up(&msm_fb_ioctl_ppp_sem);
+		break;
 	case MSMFB_OVERLAY_BLT:
 		down(&msm_fb_ioctl_ppp_sem);
 		ret = msmfb_overlay_blt(info, argp);
@@ -2810,7 +2816,7 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		down(&msm_fb_ioctl_ppp_sem);
 		msmfb_set_color_conv(&csc_matrix);
 		up(&msm_fb_ioctl_ppp_sem);
-		
+
 #endif
 
 		break;
@@ -2934,10 +2940,10 @@ static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 				return ret;
 		break;
 
-    case MSMFB_NOTIFY_UPDATE:
+	case MSMFB_NOTIFY_UPDATE:
 		ret = msmfb_notify_update(info, argp);
 		break;
-		
+
 	case MSMFB_SET_PAGE_PROTECTION:
 #if defined CONFIG_ARCH_QSD8X50 || defined CONFIG_ARCH_MSM8X60
 		ret = copy_from_user(&fb_page_protection, argp,

@@ -100,7 +100,6 @@ int mdp_lcdc_on(struct platform_device *pdev)
 	if (mfd->key != MFD_KEY)
 		return -EINVAL;
 
-    printk(KERN_INFO "[DISPLAY] %s\n", __func__);
 	fbi = mfd->fbi;
 	var = &fbi->var;
 
@@ -133,7 +132,7 @@ int mdp_lcdc_on(struct platform_device *pdev)
 			printk(KERN_INFO "%s: format2pipe failed\n", __func__);
 		lcdc_pipe = pipe; /* keep it */
 		init_completion(&lcdc_comp);
-		
+
 		writeback_offset = mdp4_writeback_offset();
 
 		if (writeback_offset > 0) {
@@ -253,18 +252,8 @@ int mdp_lcdc_on(struct platform_device *pdev)
 	ret = panel_next_on(pdev);
 	if (ret == 0) {
 		/* enable LCDC block */
-		/* FIHTDC-Div2-SW2-BSP, Ming { */
-	    /* Fix MDP POWER On/Off Issue */
-		if (inpdw(MDP_BASE + LCDC_BASE) & 0x01) { /* enabled already */
-		    /* If LCDC was already enabled in APPSBOOT, 
-		    we should not set MDP_OVERLAY0_BLOCK power-on again. 
-			refer to mdp4_util.c */
-		    printk(KERN_INFO "[DISPLAY] %s: LCDC enabled already.\n", __func__);
-		} else {
-		    MDP_OUTP(MDP_BASE + LCDC_BASE, 1);
-		    mdp_pipe_ctrl(MDP_OVERLAY0_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-		}
-		/* } FIHTDC-Div2-SW2-BSP, Ming */
+		MDP_OUTP(MDP_BASE + LCDC_BASE, 1);
+		mdp_pipe_ctrl(MDP_OVERLAY0_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
 	}
 	/* MDP cmd block disable */
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
@@ -275,13 +264,12 @@ int mdp_lcdc_on(struct platform_device *pdev)
 int mdp_lcdc_off(struct platform_device *pdev)
 {
 	int ret = 0;
-    struct msm_fb_data_type *mfd;
+	struct msm_fb_data_type *mfd;
 
 	mfd = (struct msm_fb_data_type *)platform_get_drvdata(pdev);
 
 	mutex_lock(&mfd->dma->ov_mutex);
-	
-    printk(KERN_INFO "[DISPLAY] %s\n", __func__);
+
 	/* MDP cmd block enable */
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
 	MDP_OUTP(MDP_BASE + LCDC_BASE, 0);
@@ -291,7 +279,7 @@ int mdp_lcdc_off(struct platform_device *pdev)
 
 	mdp_histogram_ctrl(FALSE);
 	ret = panel_next_off(pdev);
-	
+
 	mutex_unlock(&mfd->dma->ov_mutex);
 
 	/* delay to make sure the last frame finishes */
@@ -333,7 +321,7 @@ static void mdp4_lcdc_blt_ov_update(struct mdp4_overlay_pipe *pipe)
 	/* overlay 0 */
 	overlay_base = MDP_BASE + MDP4_OVERLAYPROC0_BASE;/* 0x10000 */
 	outpdw(overlay_base + 0x000c, addr);
-	outpdw(overlay_base + 0x001c, addr);	
+	outpdw(overlay_base + 0x001c, addr);
 }
 
 static void mdp4_lcdc_blt_dmap_update(struct mdp4_overlay_pipe *pipe)
@@ -419,8 +407,8 @@ void mdp4_overlay_lcdc_set_perf(struct msm_fb_data_type *mfd)
 void mdp4_overlay_lcdc_vsync_push(struct msm_fb_data_type *mfd,
 			struct mdp4_overlay_pipe *pipe)
 {
-    unsigned long flag;
-	
+	unsigned long flag;
+
 	if (pipe->flags & MDP_OV_PLAY_NOWAIT)
 		return;
 

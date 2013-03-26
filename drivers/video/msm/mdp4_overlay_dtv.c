@@ -1,4 +1,4 @@
-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -37,7 +37,7 @@
 #include "mdp4.h"
 
 #define DTV_BASE	0xD0000
-bool hdmi_online = FALSE;
+
 /*#define DEBUG*/
 #ifdef DEBUG
 static void __mdp_outp(uint32 port, uint32 value)
@@ -99,8 +99,7 @@ int mdp4_dtv_on(struct platform_device *pdev)
 	struct msm_fb_data_type *mfd;
 	struct mdp4_overlay_pipe *pipe;
 	int ret;
-	
-    hdmi_online = TRUE;
+
 	mfd = (struct msm_fb_data_type *)platform_get_drvdata(pdev);
 
 	if (!mfd)
@@ -277,26 +276,25 @@ int mdp4_dtv_off(struct platform_device *pdev)
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 	mdp_pipe_ctrl(MDP_OVERLAY1_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 
-    /*
+	/*
 	 * wait for vsync == 16.6 ms to make sure
 	 * the last frame finishes
 	*/
 	msleep(20);
 	pr_info("%s\n", __func__);
 
-    ret = panel_next_off(pdev);
-    
+	ret = panel_next_off(pdev);
+
 	/* dis-engage rgb2 from mixer1 */
 	if (dtv_pipe)
 		mdp4_mixer_stage_down(dtv_pipe);
-		
+
 	/*
 	 * wait for another vsync == 16.6 ms to make sure
 	 * rgb2 dis-engaged
 	*/
 	msleep(20);
-	
-    hdmi_online = FALSE;
+
 	return ret;
 }
 
@@ -326,7 +324,7 @@ void mdp4_overlay_dtv_vsync_push(struct msm_fb_data_type *mfd,
 		return;
 
 	mdp4_overlay_dtv_wait4vsync(mfd);
-	
+
 	/* change mdp clk while mdp is idle` */
 	mdp4_set_perf_level();
 }
@@ -344,28 +342,29 @@ static void mdp4_overlay_dtv_ov_start(struct msm_fb_data_type *mfd)
 	mdp_intr_mask |= INTR_OVERLAY1_DONE;
 	outp32(MDP_INTR_ENABLE, mdp_intr_mask);
 	spin_unlock_irqrestore(&mdp_spin_lock, flag);
-	mfd->ov_start = true;	
+	mfd->ov_start = true;
 }
-	
+
 static void mdp4_overlay_dtv_wait4_ov_done(struct msm_fb_data_type *mfd,
 	struct mdp4_overlay_pipe *pipe)
 {
 	u32 data = inpdw(MDP_BASE + DTV_BASE);
-	
-  	mfd->ov_start = false;
- 	
-  	if (!(data & 0x1) || (pipe == NULL))	
-    	return;
+
+	mfd->ov_start = false;
+
+	if (!(data & 0x1) || (pipe == NULL))
+		return;
 	wait_for_completion_killable(&dtv_pipe->comp);
 	mdp_disable_irq(MDP_OVERLAY1_TERM);
 }
 
 void mdp4_overlay_dtv_ov_done_push(struct msm_fb_data_type *mfd,
-	struct mdp4_overlay_pipe *pipe)
+			struct mdp4_overlay_pipe *pipe)
 {
+
 	mdp4_overlay_reg_flush(pipe, 1);
 	mdp4_overlay_dtv_ov_start(mfd);
-	
+
 	if (pipe->flags & MDP_OV_PLAY_NOWAIT)
 		return;
 
@@ -375,15 +374,15 @@ void mdp4_overlay_dtv_ov_done_push(struct msm_fb_data_type *mfd,
 	mdp4_set_perf_level();
 }
 
-void mdp4_overlay_dtv_wait_for_ov(struct msm_fb_data_type *mfd,	
-	struct mdp4_overlay_pipe *pipe)	
+void mdp4_overlay_dtv_wait_for_ov(struct msm_fb_data_type *mfd,
+	struct mdp4_overlay_pipe *pipe)
 {
-	if (mfd->ov_end) {	
-    	mfd->ov_end = false;	
-    	return;
-  	}
-  	mdp4_overlay_dtv_wait4_ov_done(mfd, pipe);
-  	mdp4_set_perf_level();
+	if (mfd->ov_end) {
+		mfd->ov_end = false;
+		return;
+	}
+	mdp4_overlay_dtv_wait4_ov_done(mfd, pipe);
+	mdp4_set_perf_level();
 }
 
 void mdp4_external_vsync_dtv()
@@ -420,11 +419,12 @@ void mdp4_dtv_overlay(struct msm_fb_data_type *mfd)
 	pipe = dtv_pipe;
 	pipe->srcp0_addr = (uint32) buf;
 	mdp4_overlay_rgb_setup(pipe);
+
 	if (mfd->ov_start) {
-    	mdp4_overlay_dtv_wait4_ov_done(mfd, pipe);
-    	mfd->ov_end = true;	
-  	}
-  	mdp4_overlay_dtv_ov_done_push(mfd, pipe);
+		mdp4_overlay_dtv_wait4_ov_done(mfd, pipe);
+		mfd->ov_end = true;
+	}
+	mdp4_overlay_dtv_ov_done_push(mfd, pipe);
 
 	mdp4_stat.kickoff_dtv++;
 	mutex_unlock(&mfd->dma->ov_mutex);
